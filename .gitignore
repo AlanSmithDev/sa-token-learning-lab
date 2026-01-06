@@ -1,0 +1,52 @@
+target/
+
+node_modules/
+bin/
+.settings/
+unpackage/
+.classpath
+.project
+*.iml
+
+.factorypath
+/.factorypath
+
+.idea/
+.vscode/
+
+sa-token-three-plugin/
+sa-token-doc-new/public/big-file/
+
+.flattened-pom.xml
+
+.qoder
+.soloncode/
+.cursor
+.firecrawl/
+.agents
+.claude
+.github
+
+AGENTS.md
+CLAUDE.md
+
+/update-log.md
+
+# 本地临时产出（审查报告等）
+temp-file/
+
+# Maven 覆盖率构建日志（目录本身保留）
+/build-log/*
+!/build-log/.gitignore
+
+
+# Python 编译缓存
+__pycache__/
+*.pyc
+
+# 本地工具脚本（todo 审查等）
+tools/
+
+# Reasonix
+.reasonix/
+reasonix.toml

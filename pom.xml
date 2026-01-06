@@ -1,0 +1,314 @@
+<?xml version='1.0' encoding='utf-8'?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<!-- 基础信息 -->
+    <groupId>cn.dev33</groupId>
+    <artifactId>sa-token-learning-lab</artifactId>
+	<packaging>pom</packaging>
+	<version>${revision}</version>
+	
+	<!-- 项目介绍 -->
+	<name>sa-token-learning-lab</name>
+	<description>An open-source, free, and one-stop Java authentication framework that makes authentication simple and elegant!</description>
+	<url>https://github.com/dromara/sa-token</url>
+
+	
+	<!-- 所有模块 -->
+	<modules>
+		<module>sa-token-dependencies</module>
+		<module>sa-token-special-dependencies</module>
+		<module>sa-token-bom</module>
+		<module>sa-token-core</module>
+		<module>sa-token-starter</module>
+		<module>sa-token-plugin</module>
+		<module>sa-token-testing</module>
+	</modules>
+
+	<!-- 开源协议 apache 2.0 -->
+	<licenses>
+		<license>
+			<name>Apache 2</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+			<distribution>repo</distribution>
+			<comments>A business-friendly OSS license</comments>
+		</license>
+	</licenses>
+	
+	<!-- 一些属性 -->
+	<properties>
+        <revision>1.46.0</revision>
+        <jdk.version>1.8</jdk.version>
+		<maven.compiler.release>8</maven.compiler.release>
+		<project.build.sourceEncoding>utf-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>utf-8</project.reporting.outputEncoding>
+
+		<!-- Maven GPG Plugin & Maven Central Portal -->
+		<maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
+		<central.publishing.maven.version>0.10.0</central.publishing.maven.version>
+
+		<!-- 单元测试工具链 -->
+		<junit-jupiter.version>6.1.3</junit-jupiter.version>
+		<jacoco.version>0.8.12</jacoco.version>
+		<maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
+		<exec-maven-plugin.version>3.5.0</exec-maven-plugin.version>
+		<build-helper-maven-plugin.version>3.6.0</build-helper-maven-plugin.version>
+		<coverage.summary.mainClass>cn.dev33.satoken.coverage.GenerateCoverageSummary</coverage.summary.mainClass>
+
+		<!--
+			日常 package / install 不跑单测和 JaCoCo。
+			要跑测：mvn test -DskipTests=false
+			要覆盖率：mvn-coverage.bat（内部会打开 skipTests / jacoco.skip）
+		-->
+		<skipTests>true</skipTests>
+		<jacoco.skip>true</jacoco.skip>
+	</properties>
+
+	<!-- 仓库信息 -->
+	<scm>
+		<tag>master</tag>
+		<url>https://github.com/dromara/sa-token.git</url>
+		<connection>scm:git:https://github.com/dromara/sa-token.git</connection>
+		<developerConnection>scm:git:https://github.com/dromara/sa-token.git</developerConnection>
+	</scm>
+	
+	<!-- 作者信息 -->
+	
+	<!-- 仓库依赖 -->
+	<dependencies>
+		<!--
+			子模块单测默认带上 JUnit，避免每个子模块 pom.xml 再抄一遍。
+			scope=test，不会传给引用本仓库 jar 的用户。
+			sa-token-bom / sa-token-dependencies 不以本模块为 parent，不会被带上；
+			special-dependencies 等聚合 POM 会带上，发布出去也只是 scope=test，可接受。
+		-->
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+	
+	<dependencyManagement>
+		<dependencies>
+
+			<!--
+			 	导入 sa-token-dependencies 所有版本定义，并传导到每个子项目。
+			 	需要注意的是：该 import 只会导入 <dependencyManagement> 部分，而不会导入 <dependencies> 部分和 <properties> 部分。
+			 -->
+			<dependency>
+				<groupId>cn.dev33</groupId>
+				<artifactId>sa-token-dependencies</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+			</dependency>
+			
+		</dependencies>
+	</dependencyManagement>
+	
+	<!-- 项目构建 -->
+	<!-- 日常：mvn package（不跑单测 / JaCoCo，也不生成 javadoc / sources / gpg） -->
+	<build>
+		<plugins>
+
+			<!-- 源码编译 -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.15.0</version>
+				<configuration>
+					<release>${maven.compiler.release}</release>
+					<encoding>UTF-8</encoding>
+				</configuration>
+			</plugin>
+
+			<!-- flatten 统一版本号管理 -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>flatten-maven-plugin</artifactId>
+				<version>1.7.3</version>
+				<configuration>
+					<updatePomFile>true</updatePomFile>
+					<flattenMode>resolveCiFriendliesOnly</flattenMode>
+				</configuration>
+				<executions>
+					<execution>
+						<id>flatten</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>flatten</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>flatten.clean</id>
+						<phase>clean</phase>
+						<goals>
+							<goal>clean</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- 新版 Central Portal 中央仓库上传   -->
+			<plugin>
+				<groupId>org.sonatype.central</groupId>
+				<artifactId>central-publishing-maven-plugin</artifactId>
+				<version>${central.publishing.maven.version}</version>
+				<extensions>true</extensions>
+				<configuration>
+					<!-- 必须与 settings.xml 中 server 的 id 一致 -->
+					<publishingServerId>central</publishingServerId>
+					<!-- 是否自动发布。设为 true 后，上传完成无需手动点击发布 -->
+					<!-- <autoPublish>true</autoPublish> -->
+					<!-- 等待直到发布完成，让构建过程等待最终结果 -->
+					<!-- <waitUntil>published</waitUntil> -->
+				</configuration>
+		   	</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+			</plugin>
+
+	   	</plugins>
+
+	   	<pluginManagement>
+		   	<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>${maven-surefire-plugin.version}</version>
+					<configuration>
+						<argLine>${argLine} -Dfile.encoding=UTF-8</argLine>
+						<forkCount>1</forkCount>
+						<runOrder>random</runOrder>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>build-helper-maven-plugin</artifactId>
+					<version>${build-helper-maven-plugin.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>exec-maven-plugin</artifactId>
+					<version>${exec-maven-plugin.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.jacoco</groupId>
+					<artifactId>jacoco-maven-plugin</artifactId>
+					<version>${jacoco.version}</version>
+					<executions>
+						<execution>
+							<id>prepare-agent</id>
+							<goals>
+								<goal>prepare-agent</goal>
+							</goals>
+						</execution>
+						<execution>
+							<id>report</id>
+							<phase>test</phase>
+							<goals>
+								<goal>report</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.apache.maven.plugins</groupId>
+										<artifactId>maven-enforcer-plugin</artifactId>
+										<versionRange>[1.0.0,)</versionRange>
+										<goals>
+											<goal>enforce</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore />
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+			</plugins>
+	   	</pluginManagement>
+
+	</build>
+
+	<!-- 仅发 Maven 中央时启用，日常 package / install 不跑 -->
+	<profiles>
+		<profile>
+			<id>sonatype-oss-release</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+						<version>3.4.0</version>
+						<configuration>
+							<attach>true</attach>
+						</configuration>
+						<executions>
+							<execution>
+								<id>attach-sources</id>
+								<goals>
+									<goal>jar-no-fork</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<version>3.12.0</version>
+						<configuration>
+							<failOnError>false</failOnError>
+							<failOnWarnings>false</failOnWarnings>
+							<additionalOptions>-Xdoclint:none</additionalOptions>
+							<detectLinks>false</detectLinks>
+							<doclint>none</doclint>
+						</configuration>
+						<executions>
+							<execution>
+								<id>attach-javadocs</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<version>${maven-gpg-plugin.version}</version>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+	
+</project>
